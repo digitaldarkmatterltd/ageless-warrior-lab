@@ -47,66 +47,13 @@ export const appRouter = router({
       }),
     
     syncFromYouTube: publicProcedure.mutation(async () => {
-      const { callDataApi } = await import("./_core/dataApi");
+      const { fetchYouTubeChannelVideos } = await import("./_core/youtubeSync");
       const { bulkUpsertEpisodes } = await import("./db");
       
       const channelId = "UCRObXaXZjKl6Pnys4f4ILNQ";
-      const allVideos: any[] = [];
       
-      let cursor: string | undefined = undefined;
-      let pageCount = 0;
-      
-      // Fetch all videos from channel
-      do {
-        const queryParams: any = {
-          id: channelId,
-          filter: 'videos_latest',
-          hl: 'en',
-          gl: 'US'
-        };
-        
-        if (cursor) {
-          queryParams.cursor = cursor;
-        }
-        
-        const response = await callDataApi('Youtube/get_channel_videos', {
-          query: queryParams
-        }) as any;
-        
-        const contents = response.contents || [];
-        for (const item of contents) {
-          if (item.type === 'video') {
-            const video = item.video;
-            const thumbnails = video.thumbnails || [];
-            const thumbnailUrl = thumbnails.length > 0 ? thumbnails[thumbnails.length - 1].url : null;
-            
-            // Generate slug from title
-            const slug = video.title
-              .toLowerCase()
-              .trim()
-              .replace(/\s+/g, '-')
-              .replace(/[^\w\-]+/g, '')
-              .replace(/\-\-+/g, '-')
-              .replace(/^-+/, '')
-              .replace(/-+$/, '');
-            
-            allVideos.push({
-              videoId: video.videoId,
-              slug,
-              title: video.title,
-              description: video.descriptionSnippet || '',
-              publishedTimeText: video.publishedTimeText,
-              lengthSeconds: video.lengthSeconds,
-              views: video.stats?.views || 0,
-              thumbnailUrl,
-              isLiveNow: video.isLiveNow ? 1 : 0
-            });
-          }
-        }
-        
-        cursor = response.cursorNext as string | undefined;
-        pageCount++;
-      } while (cursor && pageCount < 5);
+      // Fetch videos from YouTube RSS feed
+      const allVideos = await fetchYouTubeChannelVideos(channelId);
       
       // Save to database
       await bulkUpsertEpisodes(allVideos);

@@ -1,0 +1,25 @@
+services:
+  # Web Service
+  - type: web
+    name: ageless-warrior-lab
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: pnpm install && pnpm build
+    startCommand: node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ageless-warrior-lab-db
+          property: connectionString
+
+databases:
+  # MySQL Database
+  - name: ageless-warrior-lab-db
+    databaseName: ageless_warrior_lab
+    plan: free
+    region: oregon

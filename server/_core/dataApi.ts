@@ -17,31 +17,22 @@ export async function callDataApi(
   apiId: string,
   options: DataApiCallOptions = {}
 ): Promise<unknown> {
-  if (!ENV.forgeApiUrl) {
-    throw new Error("BUILT_IN_FORGE_API_URL is not configured");
-  }
-  if (!ENV.forgeApiKey) {
-    throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
-  }
-
-  // Build the full URL by appending the service path to the base URL
-  const baseUrl = ENV.forgeApiUrl.endsWith("/") ? ENV.forgeApiUrl : `${ENV.forgeApiUrl}/`;
-  const fullUrl = new URL("webdevtoken.v1.WebDevService/CallApi", baseUrl).toString();
+  // Use Manus runtime API host from environment
+  const runtimeApiHost = process.env.RUNTIME_API_HOST || "https://api.manus.im";
+  const fullUrl = `${runtimeApiHost}/api/data-api/call`;
 
   const response = await fetch(fullUrl, {
     method: "POST",
     headers: {
       accept: "application/json",
       "content-type": "application/json",
-      "connect-protocol-version": "1",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
     },
     body: JSON.stringify({
       apiId,
       query: options.query,
       body: options.body,
-      path_params: options.pathParams,
-      multipart_form_data: options.formData,
+      pathParams: options.pathParams,
+      formData: options.formData,
     }),
   });
 
